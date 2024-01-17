@@ -92,7 +92,7 @@ def tis_function5(x1, x2, x3, x4,x5):
 
 # safe constaints for tis
 def tis_constraint6(x):
-    lst = [math.ceil(x[i] * NUM_ELE) for i in [2, 3, 4, 5]]
+    lst = [int(round(x[2] * (NUM_ELE-1))) for i in [2, 3, 4, 5]]
     set_lst = set(lst)
     if len(set_lst) == len(lst) and x[0] + x[1] <= 1 and x[0] > 0.2 and x[1] > 0.2 and x[0] < 0.75 and x[1] < 0.75:
         return True
