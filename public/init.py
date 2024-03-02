@@ -26,7 +26,7 @@ def init_designparams(particals,in_min,in_max):
         in_dim = len(in_max)     #输入参数维度
         print(in_dim)
         print(glo.prior)
-        solution = np.zeros(150)
+        solution = np.zeros(NUM_ELE*2)
         solution[glo.prior[0]] = 1
         solution[glo.prior[1]] = 1
         solution[glo.prior[2]] = -1
