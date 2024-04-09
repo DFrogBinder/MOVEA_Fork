@@ -59,11 +59,11 @@ def envelop(e1,e2):
     eam[equal_vectors] = 2 * l_x[equal_vectors]
     not_equal_vectors = ~equal_vectors
     mask2 = not_equal_vectors & (l_y < l_x)
-    mask3 = not_equal_vectors & (l_x < l_y * cos_)
+    mask3 = not_equal_vectors & (l_y < l_x * cos_)
     eam[mask2 & mask3] = 2 * l_y[mask2 & mask3]
     eam[mask2 & ~mask3] = 2 * np.linalg.norm(np.cross(e2[mask2 & ~mask3], (e1[mask2 & ~mask3] - e2[mask2 & ~mask3])), axis=1) / np.linalg.norm(e1[mask2 & ~mask3] - e2[mask2 & ~mask3], axis=1)
 
-    mask4 = not_equal_vectors & (l_y < l_x * cos_)
+    mask4 = not_equal_vectors & (l_x < l_y * cos_)
     mask5 = not_equal_vectors & (l_x < l_y)
     eam[mask5 & mask4] = 2 * l_x[~mask2 & mask4]
     eam[mask5 & ~mask4] = 2 * np.linalg.norm(np.cross(e1[mask5 & ~mask4], (e2[mask5 & ~mask4] - e1[mask5 & ~mask4])), axis=1) / np.linalg.norm(e2[mask5 & ~mask4] - e1[mask5 & ~mask4], axis=1)
