@@ -128,8 +128,6 @@ def tis_function6(x):
     print(np.array([np.matmul(lfm[:, :, 0].T, stimulation1).T]).shape)
 
 
-    print(electrode1,electrode2,electrode3,electrode4)
-    # return  np.where(ez<0,abs(ez),0.1)
     eam =  (ex**2+ey**2+ez**2)**0.5 
     return np.array([1 / np.average(np.abs(eam[TARGET_POSITION])), np.mean(eam)])  
     
