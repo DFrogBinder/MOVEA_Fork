@@ -1,7 +1,7 @@
 # MOVEA: Multi-Objective Optimization via Evolutionary Algorithm for High-Definition Transcranial Electrical Stimulation of the Human Brain
 
 ## Introduction
-This repository contains the official implementation of the MOVEA algorithm for optimizing high-definition transcranial electrical stimulation (HD-tES) of the human brain. MOVEA is a multi-objective optimization approach that utilizes an evolutionary algorithm to find optimal stimulation parameters for a given target brain area. The code has been tested on a Linux system.
+This repository contains the official implementation of the MOVEA algorithm for optimizing high-definition transcranial electrical stimulation (HD-tES) of the human brain. MOVEA is a multi-objective optimization approach that utilizes an evolutionary algorithm to find optimal stimulation parameters for a given target brain area. The code is designed based on the linux platform.
 
 ## Dependencies
 To run the code, you need to have the following dependencies installed:
