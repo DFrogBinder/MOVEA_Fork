@@ -1,0 +1,18 @@
+# File extensions
+*.txt
+*.json
+*.csv
+*.xml
+*.xlsx
+*.pkl
+*.png
+*.pyc
+
+# Directories
+**/data 
+**/__pycache__
+
+# Specific files
+pass
+config
+tmp.py
