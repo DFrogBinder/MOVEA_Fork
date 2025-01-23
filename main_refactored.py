@@ -1,142 +1,150 @@
-import geatpy as ea
+import geatpy as ea  
 import sys
 import os
 import argparse
 from public import glo
 import numpy as np
-from Mopso import Mopso
-from public import P_objective
-import debugpy
 
-
-
-# Constants
 NUM_ELE = glo.NUM_ELE
 
-def parse_arguments():
-    """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(description="Run stimulation optimization.")
-    parser.add_argument('--type', '-t', default="ti", help='Stimulation method')
-    parser.add_argument('--position', '-p', default='hippo', help='Target location')
-    parser.add_argument('--head', '-m', default='ernie', help='Head model name')
-    parser.add_argument('--gen', '-g', default=0, type=int, help='Max epochs')
-    args = parser.parse_args()
+# Debugging simulation for VS Code
+def emulate_debugging_args():
+    if os.getenv('DEBUG', 'False') == 'True':
+        sys.argv = [
+            'main.py',
+            '--type', 'ti',
+            '--position', 'hippo',
+            '--head', 'ernie',
+            '--gen', '50',
+            '--m2m', '/path/to/m2m/file'
+        ]
 
-    # Add derived arguments
-    args.name = f"{args.type}_{args.position}_{args.head}"
+emulate_debugging_args()
+
+def argdet():
+    if len(sys.argv) <= 9:
+        args = myargs()
+        return args
+    else:
+        print('Cannot recognize the inputs!')
+        print("-i data -opt optimizer -dim dimension")
+        exit()
+
+def myargs():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--type', '-t', default="ti", help='stimulation method')
+    parser.add_argument('--position', '-p', default='hippo', help='target location')
+    parser.add_argument('--head', '-m', default='ernie', help='head model name')
+    parser.add_argument('--gen', '-g', default= 0 , help='max epochs')
+    parser.add_argument('--m2m', '-f', default="", help='m2m file path')
+    args = parser.parse_args()
+    parser.add_argument('--name', '-n', default= args.type + "_" + args.position + "_" + args.head , help='output name')
+    args = parser.parse_args()
     return args
 
-def set_global_variables(args):
-    """Set global variables based on arguments."""
-    glo.head_model = args.head
-    glo.type = args.type
+print("start")
 
-    # Set position coordinates
-    position_map = {
-        'hippo': [-31, -20, -14],
-        'pallidum': [-17, 3, -1],
-        'thalamus': [10, -19, 6],
-        'sensory': [41, -36, 66],
-        'dorsal': [25, 42, 37],
-        'v1': [10, -92, 2],
-        'dlpfc': [-39, 34, 37],
-        'motor': [47, -13, 52],
-    }
+args = argdet()
+glo.head_model = args.head
+glo.type = args.type
 
-    glo.position = np.array(position_map.get(args.position, args.position))
+glo.name = args.position
+if args.position == 'hippo':
+    glo.position = np.array([-31, -20, -14])
+elif args.position == 'pallidum':
+    glo.position = np.array([-17, 3, -1])
+elif args.position == 'thalamus':
+    glo.position = np.array([10, -19, 6])
+elif args.position == 'sensory':
+    glo.position = [41,-36,66]
+elif args.position == 'dorsal':
+    glo.position = [25,42,37]
+elif args.position == 'v1':
+    glo.position = np.array([10,-92,2])
+elif args.position == 'dlpfc':
+    glo.position = np.array([-39, 34, 37])
+elif args.position == 'motor':
+    glo.position = np.array([47, -13, 52])
+else:
+    print("coordinate")
+    glo.position = np.array(args.position)
 
-def create_problem(args):
-    """Create the appropriate problem based on the type."""
-    if args.type == 'ti':
-        from ti_problem import MyProblem
-        return MyProblem()
-    elif args.type in {'mti', 'tdcs'}:
-        from tdcs_problem import MyProblem
-        return MyProblem()
-    else:
-        raise ValueError(f"Unsupported stimulation type: {args.type}")
+if args.type == 'ti':
+    from ti_problem import MyProblem  
+    problem = MyProblem()
+elif args.type == 'mti':
+    from tdcs_problem import MyProblem  
+    problem = MyProblem()
+elif args.type == 'tdcs':
+    from tdcs_problem import MyProblem  
+    problem = MyProblem()
+else:
+    print('ERROR: STIMULATION TYPE')
+    sys.exit(1)
+gen = 50
+if int(args.gen) != 0:
+    gen = int(args.gen)
 
-def run_algorithm(problem, gen):
-    """Run the evolutionary algorithm."""
-    algorithm = ea.soea_SEGA_templet(
-        problem,
-        ea.Population(Encoding='RI', NIND=30),
-        MAXGEN=gen,
-        logTras=1,
-        maxTrappedCount=10
-    )
-    algorithm.mutOper.F = 0.5
-    algorithm.recOper.XOVR = 0.2
+algorithm = ea.soea_SEGA_templet(
+    problem,
+    ea.Population(Encoding='RI', NIND=30),
+    MAXGEN=gen,  # iteration
+    logTras=1,  # print log per logTras epoch ，0 means not。
+    #trappedValue=1e-2,  # early stopping parameter
+    maxTrappedCount=10)  
+algorithm.mutOper.F = 0.5  
+algorithm.recOper.XOVR = 0.2  
 
-    return ea.optimize(
-        algorithm,
-        verbose=True,
-        drawing=10,
-        outputMsg=False,
-        drawLog=False,
-        saveFlag=False
-    )
+res = ea.optimize(algorithm,
+                  verbose=True,
+                  drawing=10,
+                  outputMsg=False,
+                  drawLog=False,
+                  saveFlag=False)
+print(res)
 
-def run_mopso(args, prior_solution):
-    """Run the MOPSO algorithm."""
-    particals, cycle_, mesh_div, thresh = 100, 100, 10, 100
-    Problem, M = "TES", 2
+prior = np.array(res['Vars'][0])
+glo.prior = prior
 
-    print("Initializing MOPSO...")
-    _, Boundary, _ = P_objective.P_objective("init", Problem, M, particals)
-    max_, min_ = Boundary
+from Mopso import *
+from public import P_objective
 
-    mopso_ = Mopso(particals, max_, min_, thresh, mesh_div)
-    pareto_in, pareto_fitness = mopso_.done(cycle_)
+particals = 100  # size of population 
+cycle_ = 100  # iteration2
+mesh_div = 10  # grid parameter
+thresh = 100  # size of archive
 
-    # Save results
-    path_fitness = f"./output/pareto_fitness_{args.name}.txt"
-    path_in = f"./output/pareto_in_{args.name}.txt"
+Problem = "TES"
+M = 2 # number of obejctive
 
-    if args.type == 'ti':
-        with open(path_in, 'w+') as fp:
-            for solution in pareto_in:
-                result = ' '.join([
-                    str(int(round(solution[2] * (NUM_ELE-1)))),  # Element calculation
-                    str(2 * solution[0]),
-                    str(int(round(solution[3] * (NUM_ELE-1)))),
-                    str(-2 * solution[0]),
-                    str(int(round(solution[4] * (NUM_ELE-1)))),
-                    str(2 * solution[1]),
-                    str(int(round(solution[5] * (NUM_ELE-1)))),
-                    str(-2 * solution[1])
-                ])
-                fp.write(result + "\n")
-    else:
-        np.savetxt(path_in, pareto_in)
+print("init")
+_, Boundary, _ = P_objective.P_objective("init", Problem, M, particals)
+max_ = Boundary[0]
+min_ = Boundary[1]
 
-    np.savetxt(path_fitness, pareto_fitness)
-    print(f"Pareto positions saved to: {path_in}")
-    print(f"Pareto values saved to: {path_fitness}")
+print("start")
+mopso_ = Mopso(particals, max_, min_, thresh, mesh_div)  
+pareto_in, pareto_fitness = mopso_.done(cycle_)
+path_fitness = "./pareto_fitness_" + args.name + ".txt"
+path_in = "./pareto_in_" + args.name + ".txt"
 
-def main():
-    
-    debugpy.listen(("localhost", 5678))  # Specify the debugging port
-    print("Waiting for debugger to attach...")
-    debugpy.wait_for_client()
-    
-    """Main function to run the optimization process."""
-    args = parse_arguments()
-    set_global_variables(args)
+if args.type == 'ti':
+    fp = open(path_in,'w+')
+    for solution in (pareto_in):
+        result = ' '.join([str(elem) for elem in [int(round(solution[2] * (NUM_ELE-1))),2 * solution[0],int(round(solution[3] * (NUM_ELE-1))),2 * solution[0],int(round(solution[4] * (NUM_ELE-1))),-2 * solution[1],int(round(solution[5] * (NUM_ELE-1))),-2 * solution[1]]]) + '\n'
+        fp.write(result)
+    fp.close()
+else:
+    np.savetxt(path_in, pareto_in)
+np.savetxt(path_fitness, pareto_fitness)
+print("\n", "pareto_position:" + path_in)
+print("pareto_value:" + path_fitness)
+print("\n,over")
 
-    print("Creating problem...")
-    problem = create_problem(args)
-    gen = args.gen if args.gen != 0 else 50
-
-    print("Running algorithm...")
-    res = run_algorithm(problem, gen)
-    print(res)
-
-    glo.prior = np.array(res['Vars'][0])
-
-    print("Running MOPSO...")
-    run_mopso(args, glo.prior)
-    print("Process completed.")
-
-if __name__ == "__main__":
-    main()
+if args.m2m:
+    glo.m2m = args.m2m
+    from visualization import visual
+    with open(path_in, 'r') as file:
+        for i, line in enumerate(file):
+            arr = np.array(line.strip().split(' '))
+            visual(arr, i, args.type)
