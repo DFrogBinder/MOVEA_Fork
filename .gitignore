@@ -8,10 +8,14 @@
 *.png
 *.pyc
 *.npy
+*.msh
+*.stl
+
 
 # Directories
 **/data 
 **/__pycache__
+**/Output
 
 # Specific files
 pass
